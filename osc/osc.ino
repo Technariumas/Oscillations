@@ -1,5 +1,8 @@
+//#include <Bounce2.h>
 #include <SPI.h>
 #include <SD.h>
+//#define BUTTON_PIN 4
+
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "I2Cdev.h"
 #include "helper_3dmath.h"
@@ -11,6 +14,12 @@
 
 int i = 0;
 int t = 0;
+int val = 0; 
+int inPin = 4;
+int loopCounter = 0;
+
+// Instantiate a Bounce object :
+//Bounce debouncer = Bounce(); 
 
 File dataFile;
 
@@ -25,8 +34,8 @@ MPU6050 mpu(0x69);
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-//uint32_t logLength = 5 * 60000L;       // 5 minutes
-uint32_t logLength = 30000L;      
+uint32_t logLength = 120 * 60000L;       // 5 minutes
+//uint32_t logLength = 30000L;      
 
 const int chipSelect = 10;
 
@@ -66,6 +75,7 @@ void dmpDataReady() {
 bool blinkState = false;
 
 void setup() {
+pinMode(inPin, INPUT); 
 
   // see if the card is present and can be initialized:
   if (!SD.begin()) {
@@ -110,10 +120,10 @@ pinMode(INTERRUPT_PIN, INPUT);
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
     // wait for ready
-    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    while (Serial.available() && Serial.read()); // empty buffer
-    while (!Serial.available());                 // wait for data
-    while (Serial.available() && Serial.read()); // empty buffer again
+    //Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+    //while (Serial.available() && Serial.read()); // empty buffer
+    //while (!Serial.available());                 // wait for data
+    //while (Serial.available() && Serial.read()); // empty buffer again
 
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
@@ -156,14 +166,22 @@ pinMode(INTERRUPT_PIN, INPUT);
 
 void loop() {
 if (!dmpReady) return;
-
   Serial.print("Starting data logging");
   for( uint32_t tStart = millis();  (millis()-tStart) < logLength;  ){
     unsigned long currentMillis = millis();
     
     if(currentMillis - previousMillis > interval) {
+      
       previousMillis = currentMillis;
-        Serial.println(currentMillis);
+        // Update the Bounce instance :
+        //debouncer.update();
+        
+          val = digitalRead(inPin); 
+          if (val == LOW) {
+          Serial.print("Stop ");
+          dataFile.close();
+          delay(60000);
+          } 
                 #ifdef OUTPUT_READABLE_WORLDACCEL
             // display initial world-frame acceleration, adjusted to remove gravity
             // and rotated based on known orientation from quaternion
@@ -213,12 +231,6 @@ if (!dmpReady) return;
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
             mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-            Serial.print("aworld\t");
-            Serial.print(aaWorld.x);
-            Serial.print("\t");
-            Serial.print(aaWorld.y);
-            Serial.print("\t");
-            Serial.println(aaWorld.z);
           #endif
      
         if (dataFile) {
@@ -235,10 +247,12 @@ if (!dmpReady) return;
       else {
         Serial.println("error opening file");
       }
-    
+    if (loopCounter == 500) {
+    dataFile.flush();
+    }
     }
   }
-dataFile.flush();
+
 dataFile.close();
 Serial.print("Finished logging");
 delay(300000);
