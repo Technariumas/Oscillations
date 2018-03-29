@@ -51,7 +51,7 @@ float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3]; // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
 unsigned long previousMillis = 0;        // will store last time of measurement
-unsigned long interval = 10;           // interval at which to measure (milliseconds)
+unsigned long interval = 9;           // interval at which to measure (milliseconds)
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -86,10 +86,6 @@ void setup() {
     }
 }
   
-if (dataFile) {
-   dataFile.println("ms, ax, ay, az, gx, gy, gz");
-dataFile.flush();
- }
 
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -171,6 +167,47 @@ if (!dmpReady) return;
                 #ifdef OUTPUT_READABLE_WORLDACCEL
             // display initial world-frame acceleration, adjusted to remove gravity
             // and rotated based on known orientation from quaternion
+             // wait for MPU interrupt or extra packet(s) available
+    while (!mpuInterrupt && fifoCount < packetSize) {
+        // other program behavior stuff here
+        // .
+        // .
+        // .
+        // if you are really paranoid you can frequently test in between other
+        // stuff to see if mpuInterrupt is true, and if so, "break;" from the
+        // while() loop to immediately process the MPU data
+        // .
+        // .
+        // .
+    }
+
+    // reset interrupt flag and get INT_STATUS byte
+    mpuInterrupt = false;
+    mpuIntStatus = mpu.getIntStatus();
+
+    // get current FIFO count
+    fifoCount = mpu.getFIFOCount();
+
+    // check for overflow (this should never happen unless our code is too inefficient)
+    if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
+        // reset so we can continue cleanly
+        mpu.resetFIFO();
+        Serial.println(F("FIFO overflow!"));
+
+    // otherwise, check for DMP data ready interrupt (this should happen frequently)
+    } 
+    else if (mpuIntStatus & 0x02) {
+        // wait for correct available data length, should be a VERY short wait
+        while (fifoCount < packetSize) fifoCount = mpu.getFIFOCount();
+
+        // read a packet from FIFO
+        mpu.getFIFOBytes(fifoBuffer, packetSize);
+        
+        // track FIFO count here in case there is > 1 packet available
+        // (this lets us immediately read more without waiting for an interrupt)  
+        fifoCount -= packetSize;
+    }
+            
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetAccel(&aa, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
