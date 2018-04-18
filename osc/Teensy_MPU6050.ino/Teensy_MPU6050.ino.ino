@@ -62,16 +62,16 @@ void setup() {
         Fastwire::setup(400, true);
     #endif
 
-  pinMode(INTERRUPT_PIN, INPUT);
+  //pinMode(INTERRUPT_PIN, INPUT);
   //digitalWrite(INTERRUPT_PIN, LOW);
 
     // enable Arduino interrupt detection
-    Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+    //Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+   // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
     // initialize serial communication
     // (38400 chosen because it works as well at 8MHz as it does at 16MHz, but
     // it's really up to you depending on your project)
-    Serial.begin(38400);
+    Serial.begin(1000000);
 
      // initialize device
     Serial.println(F("Initializing I2C devices..."));
@@ -82,10 +82,10 @@ void setup() {
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
     // wait for ready
-    //Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    //while (Serial.available() && Serial.read()); // empty buffer
-    //while (!Serial.available());                 // wait for data
-    //while (Serial.available() && Serial.read()); // empty buffer again
+    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+    while (Serial.available() && Serial.read()); // empty buffer
+    while (!Serial.available());                 // wait for data
+    while (Serial.available() && Serial.read()); // empty buffer again
 
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
@@ -100,7 +100,7 @@ void setup() {
         mpuIntStatus = mpu.getIntStatus();
 
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        Serial.println(F("DMP ready! Waiting for first interrupt..."));
+        //Serial.println(F("DMP ready! Waiting for first interrupt..."));
         dmpReady = true;
 
         // get expected DMP packet size for later comparison
@@ -120,7 +120,7 @@ void setup() {
     Serial.print(mpu.getXGyroOffset()); Serial.print("\t"); // 0
     Serial.print(mpu.getYGyroOffset()); Serial.print("\t"); // 0
     Serial.print(mpu.getZGyroOffset()); Serial.print("\t"); // 0
-    delay(10000);
+    
 }
 
 // ================================================================
@@ -129,12 +129,13 @@ void setup() {
 
 
 void loop() {
-  if (!dmpReady) return;
-  
-  #ifdef OUTPUT_READABLE_WORLDACCEL
 
-  while (!mpuInterrupt && fifoCount < packetSize) {
-        Serial.println("Waiting...");
+    // if programming failed, don't try to do anything
+    if (!dmpReady) return;
+            
+   /*Commented out by 109jb
+   // wait for MPU interrupt or extra packet(s) available
+    while (!mpuInterrupt && fifoCount < packetSize) {
         // other program behavior stuff here
         // .
         // .
@@ -146,42 +147,52 @@ void loop() {
         // .
         // .
     }
-    //Serial.println("reseting interrupt flag");
+
     // reset interrupt flag and get INT_STATUS byte
     mpuInterrupt = false;
-    mpuIntStatus = mpu.getIntStatus();
+*/
+    
+    // mpuIntStatus = mpu.getIntStatus();
 
     // get current FIFO count
     fifoCount = mpu.getFIFOCount();
 
     // check for overflow (this should never happen unless our code is too inefficient)
-    if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
+    if (fifoCount == 1024) {
         // reset so we can continue cleanly
         mpu.resetFIFO();
         Serial.println(F("FIFO overflow!"));
 
     // otherwise, check for DMP data ready interrupt (this should happen frequently)
-    } 
-    else if (mpuIntStatus & 0x02) {
+    } else {        // Commented out by 109jb -->  if (mpuIntStatus & 0x02) {
         // wait for correct available data length, should be a VERY short wait
+        
         while (fifoCount < packetSize) fifoCount = mpu.getFIFOCount();
-
         // read a packet from FIFO
+        
+        //Serial.print(millis()); 
         mpu.getFIFOBytes(fifoBuffer, packetSize);
-        //mpu.resetFIFO();
+        
+        
         // track FIFO count here in case there is > 1 packet available
-        // (this lets us immediately read more without waiting for an interrupt)  
+        // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
-    }
+            // display initial world-frame acceleration, adjusted to remove gravity
+            // and rotated based on known orientation from quaternion
+            
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetAccel(&aa, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
             mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-            Serial.println(aaWorld.x);
-            Serial.println(aaWorld.y);
+            Serial.print(millis());
+            Serial.print(",");
+            Serial.print(aaWorld.x);
+            Serial.print(",");
+            Serial.print(aaWorld.y);
+            Serial.print(",");
             Serial.println(aaWorld.z);
-            Serial.flush();
-            //delay(100);
-    #endif
+            //Serial.print(",");
+            //Serial.println(millis());
+}
 }
