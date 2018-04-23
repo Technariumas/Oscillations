@@ -177,8 +177,9 @@ if (!dmpReady) return;
         //debouncer.update();
         
           val = digitalRead(inPin); 
+          //Serial.println(val);
           if (val == LOW) {
-          Serial.print("Stop ");
+          Serial.println("Stop ");
           dataFile.close();
           delay(60000);
           } 
