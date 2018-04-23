@@ -4,12 +4,12 @@ import math
 from scipy import signal
 from wavelets import WaveletAnalysis
 data = np.genfromtxt("output.csv", delimiter=",")
-time = (data[:, 0])/1000
+time = (data[:, 0])/1000000
 
 
 x = 9.8*(data[:, 1])/2048
 y = 9.8*(data[:, 2])/2048
-z = 9.8*((data[:, 3] - 270))/2048 # -- factory offset of this particular accelerator!
+z = 9.8*((data[:, 3]))/2048 # -- factory offset of this particular accelerator!
 
 #x[np.where(np.abs(x) > 5)] = 0
 #y[np.where(np.abs(y) > 5)] = 0
@@ -21,7 +21,8 @@ raw_acc = np.sqrt(x**2 + y**2 + z**2)
 #print np.mean(x), np.mean(y), np.mean(z)
 #exit()
 
-dt = 0.005
+dt = 0.00009
+print(np.mean(np.diff(time)))
 
 vel = np.cumsum(raw_acc * dt) 
 
