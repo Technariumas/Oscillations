@@ -11,5 +11,4 @@ ser.write("start")
 
 while True:    
     command = ser.readline()
-    #for x in command.split(','):
-    print(command) 
+    print command
