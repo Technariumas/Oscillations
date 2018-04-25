@@ -1,33 +1,46 @@
-import matplotlib.pyplot as plt
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import numpy as np
-import math
-import waipy
-from waipy import wavelet_plot
+import matplotlib.pyplot as plt
 
-tick_spacing = 4
+import pywt
 
-data = np.genfromtxt("data/batch_4.txt", delimiter=",")[5000:10000]
-time = (data[:, 0])#/1000
+print(pywt.wavelist())
 
+data = np.genfromtxt("data/batch_4.txt", delimiter=",")#[10000:20000]
+time = (data[:, 0])/1000
 x = 9.8*(data[:, 1])/2048
 y = 9.8*(data[:, 2])/2048
-z = 9.8*((data[:, 3]))/2048 # -- factory offset of this particular accelerometer!
+z = 9.8*(data[:, 3])/2048 # -- factory offset of this particular accelerator!
 
-var = x
+sst = z
 
-data_norm = waipy.normalize(var)
-alpha = np.corrcoef(data_norm[0:-1], data_norm[1:])[0,1]; 
-result = waipy.cwt(data_norm, 5, 0, 0.0625, 1, 36, alpha, 6, mother='Morlet', name="name")
-waipy.wavelet_plot("img/batch_4.png", time, data_norm, 0.03125, result); 
+#time, sst = pywt.data.nino()
+dt = 5
 
+# Taken from http://nicolasfauchereau.github.io/climatecode/posts/wavelet-analysis-in-python/
+wavelet = 'morl'
+scales = np.arange(1, 128)
 
-"""
-    CONTINUOUS WAVELET TRANSFORM
-    pad = 1         # pad the time series with zeroes (recommended)
-    dj = 0.25       # this will do 4 sub-octaves per octave
-    s0 = 2*dt       # this says start at a scale of 6 months
-    j1 = 7/dj       # this says do 7 powers-of-two with dj sub-octaves each
-    lag1 = 0.72     # lag-1 autocorrelation for red noise background
-    param = 6
-    mother = 'Morlet'
-"""
+[cfs, frequencies] = pywt.cwt(sst, scales, wavelet, dt)
+power = (abs(cfs)) ** 2
+
+period = 1. / frequencies
+levels = [0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8]
+f, ax = plt.subplots(figsize=(15, 10))
+ax.contourf(time, np.log2(period), np.log2(power), np.log2(levels),
+            extend='both')
+
+ax.set_title('%s Wavelet Power Spectrum (%s)' % ('Nino1+2', wavelet))
+ax.set_ylabel('Period (ms)')
+Yticks = 2 ** np.arange(np.ceil(np.log2(period.min())),
+                        np.ceil(np.log2(period.max())))
+ax.set_yticks(np.log2(Yticks))
+ax.set_yticklabels(Yticks)
+ax.invert_yaxis()
+ylim = ax.get_ylim()
+ax.set_ylim(ylim[0], -1)
+plt.tight_layout()
+plt.savefig('img/p_4_z')
+
