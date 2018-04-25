@@ -3,7 +3,11 @@ import numpy as np
 import math
 from scipy import signal
 from wavelets import WaveletAnalysis
-data = np.genfromtxt("testas.txt", delimiter=",")
+import matplotlib.ticker as ticker
+
+tick_spacing = 4
+
+data = np.genfromtxt("data/batch_1.txt", delimiter=",")
 time = (data[:, 0])/1000
 
 
@@ -29,28 +33,33 @@ vel = np.cumsum(raw_acc * dt)
 #print time[1]-time[0], time[501]-time[500], np.mean(np.diff(time))
 
 fig = plt.figure()
-f, ax = plt.subplots(4)
-ax[0].plot(time, raw_acc, c="k", label="a")
-ax[0].legend()
+f, ax = plt.subplots(2)
 
-ax[1].plot(time, z, c="b", label="z")
-ax[1].plot(time, y, c="g", label="y")
-ax[1].plot(time, x, c="r", label="x")
-ax[1].legend(loc=3)
-ax[2].hist(np.diff(time), bins=20)#plot(time, dist, c="k")
+ax[0].axhline(0, c='k')
 
-fft = np.abs(np.fft.fft(z))/(2*len(z))
-freq = np.fft.fftfreq(len(z), dt)
+ax[0].plot(time, z, c="b", label="z")
+ax[0].plot(time, y, c="g", label="y")
+ax[0].plot(time, x, c="r", label="x")
+ax[0].legend(loc=3)
+fft = np.abs(np.fft.rfft(x, norm='ortho')/(2*len(x)))
+freq = np.fft.rfftfreq(len(z), dt)
+ax[1].plot(freq, fft, c="r", label="x")
 
-ax[3].plot(freq, fft, c="b", label="FFT")
+#fft = np.abs(np.fft.fft(z))/(2*len(z))
+#freq = np.fft.fftfreq(len(z), dt)
+#ax[1].plot(freq, fft, c="b", label="z")
+
+
 
 #f, t, Sxx = signal.spectrogram(x, 100)
 #ax[3].pcolormesh(t, f, Sxx)
-ax[3].axis([0, 100, 0, 0.1])
-ax[3].legend(loc=2)
+#ax[1].axis([0, 20, 0, 0.1])
+ax[1].xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+ax[1].legend(loc=1)
 plt.xlabel("Hz")
 plt.tight_layout()
 plt.savefig("img/spectrogram.png")
+
 exit()
 fig = plt.figure()
 wa = WaveletAnalysis(raw_acc, dt=dt)
