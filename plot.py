@@ -7,8 +7,8 @@ from astroML.fourier import PSD_continuous
 
 tick_spacing = 4
 
-data = np.genfromtxt("data/batch_4.txt", delimiter=",")
-time = (data[:, 0])#/1000
+data = np.genfromtxt("data/batch_3.txt", delimiter=",")
+time = (data[:, 0])/1000
 x = 9.8*(data[:, 1])/2048
 y = 9.8*(data[:, 2])/2048
 z = 9.8*(data[:, 3])/2048 # -- factory offset of this particular accelerator!
@@ -16,7 +16,7 @@ z = 9.8*(data[:, 3])/2048 # -- factory offset of this particular accelerator!
 var = z
 
 
-dt = 5
+dt = 0.005
 
 
 #----------------------------------------------------------------------
@@ -51,8 +51,6 @@ ax2.plot(fk, PSD, '-', c=color, lw=linewidth)
 # vertical line marking the expected peak location
 ax2.axhline(0, c='k', lw=0.3)
 ax2.axvline(13.535, c='grey', lw=0.2, label="13.535 Hz")
-ax2.axvline(6.768, c='k', lw=0.2, label="6.768 Hz")
-
 plt.legend(loc=1, frameon=False)
 #ax1.set_xlim(-25, 25)
 #ax1.set_ylim(-0.1, 0.3001)
@@ -68,5 +66,5 @@ ax2.set_ylim(0, 8000)
 ax2.set_xlabel('$f$')
 ax2.set_ylabel('$PSD(f)$')
 plt.tight_layout()
-plt.savefig('img/batch4_spectrogram_z.png')
+plt.savefig('img/batch3_spectrogram_z.png')
 
