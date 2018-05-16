@@ -10,52 +10,27 @@ from scipy.stats import norm
 from astroML.fourier import PSD_continuous
 import scipy.signal as signal
 from datetime import datetime, timezone
+from pandas.tseries import converter as pdtc
 
-def utc_to_local(utc_t):
-    return utc_t.replace(tzinfo=timezone.utc).astimezone(tz=None)
-
-# First, design the Buterworth filter
-#N  = 2    # Filter order
-#Wn = 0.05 # Cutoff frequency
-#B, A = signal.butter(N, Wn, btype='high', output='ba')
 
 input_file = sys.argv[1]
 output_filename = input_file[5:-4]
 acc_axis = sys.argv[2]
 tick_spacing = 4
 
-data = np.genfromtxt(input_file, skip_header = 1, delimiter=",", dtype = int)#[132*200:133*200]
-time = (data[:, 0])#/1000
+data = np.genfromtxt(input_file, dtype=[('time', 'U028'), ('seconds', int), ('x', float),  ('y', float),  ('z', float)], delimiter=",")[6:]#offset at the beginning of 05.11 files
+time = np.array(data['time'], dtype='datetime64')
+seconds = data['seconds']
+seconds = seconds - seconds[0]
+print(np.mean(np.diff(seconds)))
 
-with open(input_file) as f:
-    start_time = utc_to_local(datetime.strptime(f.readline().strip(), '%Y-%m-%d %H:%M:%S.%f'))
-
-start_offset = time - time[0]
-print(start_offset[1])
-
-timestamps = np.empty((time.shape), dtype = 'datetime64')
-timestamps = np.datetime64(start_time) + start_offset
-
-
-
-if acc_axis == 'x':
-	acc = 9.8*(data[:, 1])/2048
-elif acc_axis == 'y':
-	acc = 9.8*(data[:, 2])/2048
-elif acc_axis == 'z':
-	acc = 9.8*(data[:, 3] - 150)/2048 # -- factory offset of this particular accelerometer!
-else:
-	print("Wrong axis argument!")
-	exit()
-
-
+acc = data[acc_axis]
 #acc-=np.mean(acc)
 
 #acc = signal.filtfilt(B,A, acc)
 #vel = integrate.cumtrapz(acc, time, initial=0)
 #vel-=np.mean(acc)
 #var = integrate.cumtrapz(vel, time, initial=0)
-dt = 0.005
 
 
 #----------------------------------------------------------------------
@@ -80,12 +55,18 @@ ax2 = fig.add_subplot(212)
 color = 'black'
 linewidth = 1
 
-# compute the PSD
-fk, PSD = PSD_continuous(time, acc)
 
+	
 # plot the data and PSD
 ax1.plot(time, acc, '-', c=color, lw=1)
 ax1.axhline(0, c='k', lw=0.3)
+
+# compute the PSD
+try:
+	fk, PSD = PSD_continuous(seconds, acc)
+except ValueError:
+	seconds, acc = seconds[1:], acc[1:] #number of samples must be even
+	fk, PSD = PSD_continuous(seconds, acc)
 
 ax2.plot(fk, PSD, '-', c=color, lw=linewidth)
 
@@ -100,7 +81,7 @@ ax1.set_ylabel('$h(t)$')
 #ax1.yaxis.set_major_locator(plt.MultipleLocator(1))
 
 ax2.set_xlim(0, 50)
-ax2.set_ylim(0, 5000)
+ax2.set_ylim(0, 1000)
 
 ax2.set_xlabel('$f$')
 ax2.set_ylabel('$PSD(f)$')
