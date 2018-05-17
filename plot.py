@@ -18,14 +18,19 @@ output_filename = input_file[5:-4]
 acc_axis = sys.argv[2]
 tick_spacing = 4
 
-data = np.genfromtxt(input_file, dtype=[('time', 'U028'), ('seconds', int), ('x', float),  ('y', float),  ('z', float)], delimiter=",")[6:]#offset at the beginning of 05.11 files
+data = np.genfromtxt(input_file, dtype=[('time', 'U028'), ('seconds', float), ('x', float),  ('y', float),  ('z', float)], delimiter=",")[6:3000]#offset at the beginning of 05.11 files
 time = np.array(data['time'], dtype='datetime64')
 seconds = data['seconds']
 seconds = seconds - seconds[0]
 print(np.mean(np.diff(seconds)))
 
+print(seconds.dtype)
+
+
 acc = data[acc_axis]
 #acc-=np.mean(acc)
+
+print(acc.dtype)
 
 #acc = signal.filtfilt(B,A, acc)
 #vel = integrate.cumtrapz(acc, time, initial=0)
@@ -54,9 +59,6 @@ ax2 = fig.add_subplot(212)
 
 color = 'black'
 linewidth = 1
-
-
-	
 # plot the data and PSD
 ax1.plot(time, acc, '-', c=color, lw=1)
 ax1.axhline(0, c='k', lw=0.3)
