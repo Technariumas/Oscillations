@@ -18,9 +18,9 @@ output_filename = input_file[5:-4]
 acc_axis = sys.argv[2]
 tick_spacing = 4
 
-data = np.genfromtxt(input_file, dtype=[('time', 'U028'), ('seconds', float), ('x', float),  ('y', float),  ('z', float)], delimiter=",")[6:3000]#offset at the beginning of 05.11 files
+data = np.genfromtxt(input_file, dtype=[('time', 'U028'), ('seconds', float), ('x', float),  ('y', float),  ('z', float)], delimiter=",")[6:]#offset at the beginning of 05.11 files
 time = np.array(data['time'], dtype='datetime64')
-seconds = data['seconds']
+seconds = data['seconds']/1000
 seconds = seconds - seconds[0]
 print(np.mean(np.diff(seconds)))
 
@@ -83,7 +83,7 @@ ax1.set_ylabel('$h(t)$')
 #ax1.yaxis.set_major_locator(plt.MultipleLocator(1))
 
 ax2.set_xlim(0, 50)
-ax2.set_ylim(0, 1000)
+ax2.set_ylim(0, 8000)
 
 ax2.set_xlabel('$f$')
 ax2.set_ylabel('$PSD(f)$')
