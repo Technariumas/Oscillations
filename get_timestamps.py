@@ -23,8 +23,7 @@ with open(input_file) as f:
     output_filename = real_time.strftime("%Y%m%d-%H_%M_%S")
 
 start_offset = seconds - seconds[0]
-print(x[1])
-timestamps = np.datetime64(start_time) + start_offset*1000 #microseconds
+timestamps = np.datetime64(start_time) + start_offset #microseconds
 data = np.zeros(timestamps.size, dtype=[('time', 'U028'), ('seconds', float), ('x', float),  ('y', float),  ('z', float)])
 data['time'] = timestamps
 data['seconds'] = seconds
