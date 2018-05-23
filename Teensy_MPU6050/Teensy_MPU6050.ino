@@ -3,7 +3,7 @@ const int MPU_addr = 0x68; // I2C address of the MPU-6050
 int16_t AcX, AcY, AcZ;
 unsigned long previousMillis = 0;        
 const int interval = 5;           
-const long startupTime = 30000;
+const long startupTime = 60000;
 
  
 
